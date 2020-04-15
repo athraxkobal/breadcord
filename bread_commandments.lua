@@ -6,17 +6,23 @@ local discordia = require('discordia');
 local Client;
 
 --[[
-	I'd get around to using a table for command f l a g s
-
-	name, description, command function, group, optional boolean serveronly
+	name, description, command function, group, optional flags
 	Set name as a table for aliases
 	Function gets the message object and the message string with the command taken out
-	Warning: other than the serveronly bool, commands themselves are expected to parse the arguments themselves and if the executor can actually use the command
+	Flags can be listed as extra arguments or in a table
+	Available flags:
+		none (everything else is ignored if none is in the flags table)
+		serveronly
+		dmonly
+		owneronly
+	
+	Warning: Any "missing flags" are ones commands themselves are expected handle themselves, and for now, are also expected to parse arguments themselves
 	 Why? I don't have time to formulate a argument parsing tool, regardless of how easy it really is
 	 I know this leads to commands being very large when having multiple arguments but for testing purposes I will not be having a parse system 
 	 Eventually I will add a helper parse function that commands can call upon from the Commandments table, and convert commands that have their own legacy parsing to the new
 ]]--
-function Commandments:addCmd(name,description,funciones,group,serveronly)
+function Commandments:addCmd(name,description,funciones,group,...)
+	local flags = {...};
 	if type(name) == 'table' then
 		for i,v in ipairs(name) do
 			name[i] = v:lower();
@@ -24,8 +30,18 @@ function Commandments:addCmd(name,description,funciones,group,serveronly)
 	else
 		name = {name:lower()};
 	end;
-	if serveronly == nil then serveronly = false; end;
-	table.insert(self,#self+1,{name,description,funciones,group,serveronly});
+	local fixedFlags = {};
+	local flags = {...};
+	if #flags == 0 then
+		flags = {'none'};
+	elseif type(flags[1]) == 'table' then
+		flags = flags[1];
+	end;
+	for i,v in ipairs(flags) do
+		fixedFlags[v:lower()] = true;
+	end;
+	assert(not (fixedFlags['dmonly'] and fixedFlags['serveronly']),'Commandment '..name[1]..'\'s has conflicting dm and server flags');
+	table.insert(self,#self+1,{name,description,funciones,group,fixedFlags});
 end;
 
 function Commandments.messageCreate(msgObj)
@@ -48,15 +64,55 @@ function Commandments.messageCreate(msgObj)
 				if Commandment ~= nil then break; end;
 			end;
 			if Commandment ~= nil then
-				if msgObj.guild ~= nil then
+				-- I feel like this is dirty, could be improved
+				if Commandment[5]['none'] then
 					print('B_COMMANDMENTS | Commandment '..msgObj.content..' by '..msgObj.author.tag..' is valid, executing');
 					Commandment[3](msgObj,Parameter);
 				else
-					if Commandment[5] then
-						msgObj:reply('Sorry, this commandment can only be ran in servers');
+					if Commandment[5]['dmonly'] then
+						if msgObj.guild then
+							msgObj:reply('This command can only be ran in DM');
+						else
+							if Commandment[5]['owneronly'] then
+								if msgObj.author.id == Client.owner.id then
+									Commandment[3](msgObj,Parameter);
+									print('B_COMMANDMENTS | DM Commandment '..msgObj.content..' by bot owner is valid, executing');
+								else
+									msgObj:reply('This command is owner only');
+								end;
+							else
+								Commandment[3](msgObj,Parameter);
+								print('B_COMMANDMENTS | DM Commandment '..msgObj.content..' by '..msgObj.author.tag..' is valid, executing');
+							end;
+						end;
+					elseif Commandment[5]['serveronly'] then
+						if not msgObj.guild then
+							msgObj:reply('This command can only be ran in a server');
+						else
+							if Commandment[5]['owneronly'] then
+								if msgObj.author.id == Client.owner.id then
+									Commandment[3](msgObj,Parameter);
+									print('B_COMMANDMENTS | Commandment '..msgObj.content..' by bot owner is valid, executing');
+								else
+									msgObj:reply('This command is owner only');
+								end;
+							else
+								Commandment[3](msgObj,Parameter);
+								print('B_COMMANDMENTS | Commandment '..msgObj.content..' by '..msgObj.author.tag..' is valid, executing');
+							end;
+						end;
 					else
-						print('B_COMMANDMENTS | DM Commandment '..msgObj.content..' by '..msgObj.author.tag..' is valid, executing');
-						Commandment[3](msgObj,Parameter);
+						if Commandment[5]['owneronly'] then
+							if msgObj.author.id == Client.owner.id then
+								Commandment[3](msgObj,Parameter);
+								print('B_COMMANDMENTS | Commandment '..msgObj.content..' by bot owner is valid, executing');
+							else
+								msgObj:reply('This command is owner only');
+							end;
+						else
+							Commandment[3](msgObj,Parameter);
+							print('B_COMMANDMENTS | Commandment '..msgObj.content..' by '..msgObj.author.tag..' is valid, executing');
+						end;
 					end;
 				end;
 			end;

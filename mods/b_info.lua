@@ -182,8 +182,8 @@ end;
 
 return function(Commandments,Client)
 	Commandments:addCmd('snowflakedate','Calculate date from a snowflake',function(msgObj,Parameter)
-		if msgObj.author.id == Client.owner.id then msgObj:reply(discordia.Date.fromSnowflake(Parameter):toString()..', jackass'); end;
-	end,'info');
+		msgObj:reply(discordia.Date.fromSnowflake(Parameter):toString()..', jackass');
+	end,'info','owneronly');
 	Commandments:addCmd('guildinfo','Get info of this guild',function(msgObj,Parameter)
 		if msgObj.author.id ~= Client.owner.id then
 			if msgObj.guild ~= nil then
