@@ -1,12 +1,26 @@
 local discordia = require('discordia');
 
+-- "parse"Mention
+local function parseMention(Parameter)
+	if Parameter:sub(1,2) == '<@' then
+		local fSub,sSub = Parameter:find('%b<>');
+		return Parameter:sub(3,sSub-1),Parameter:sub(sSub+2);
+	elseif Parameter:sub(1,3) == '<@!' then
+		local fSub,sSub = Parameter:find('%b<>');
+		return Parameter:sub(4,sSub-1),Parameter:sub(sSub+2);
+	else
+		local fSub,sSub = Parameter:find('%d+');
+		return Parameter:sub(1,sSub),Parameter:sub(sSub+2);
+	end;
+end;
+
 return function(Commandments,Client)
 	--[[TODO
 			Add or create a real parser
 	]]--
 	Commandments:addCmd('ban','Ban a user',function(msgObj,Parameter)
-		local msgPurgeDays = nil;
-		local snowflake = '';
+		local msgPurgeDays;
+		local snowflake;
 		if Parameter == '' then
 			msgObj:reply('Usage: '..Commandments.Prefix..'ban <optional days> <snowflake or mention> <optional reason>');
 			return nil;
@@ -21,19 +35,10 @@ return function(Commandments,Client)
 				return nil;
 			end;
 		end;
-		if Parameter:sub(1,2) == '<@' then
-			local fSub,sSub = Parameter:find('%b<>');
-			snowflake = Parameter:sub(3,sSub-1);
-			Parameter = Parameter:sub(sSub+2);
-		else
-			local fSub,sSub = string.find(Parameter,'%d+');
-			snowflake = Parameter:sub(1,sSub);
-			Parameter = Parameter:sub(sSub+2);
-		end;
+		snowflake,Parameter = parseMention(Parameter);
 		if Parameter == '' then
 			Parameter = nil;
 		end;
-		
 		local duelPurpose = msgObj.guild:getBan(snowflake);
 		if duelPurpose ~= nil then
 			msgObj:reply('The user specified '..duelPurpose.user.tag..' is already banned');
@@ -62,15 +67,7 @@ return function(Commandments,Client)
 			return nil;
 		end;
 		print('B_MOD | unban parameters: '..Parameter);
-		if Parameter:sub(1,2) == '<@' then
-			local fSub,sSub = Parameter:find('%b<>');
-			snowflake = Parameter:sub(3,sSub-1);
-			Parameter = Parameter:sub(sSub+2);
-		else
-			local fSub,sSub = string.find(Parameter,'%d+');
-			snowflake = Parameter:sub(1,sSub);
-			Parameter = Parameter:sub(sSub+2);
-		end;
+		snowflake,Parameter = parseMention(Parameter);
 		if Parameter == '' then
 			Parameter = nil;
 		end;
@@ -95,15 +92,7 @@ return function(Commandments,Client)
 			return nil;
 		end;
 		print('B_MOD | kick parameters: '..Parameter);
-		if Parameter:sub(1,2) == '<@' then
-			local fSub,sSub = Parameter:find('%b<>');
-			snowflake = Parameter:sub(3,sSub-1);
-			Parameter = Parameter:sub(sSub+2);
-		else
-			local fSub,sSub = string.find(Parameter,'%d+');
-			snowflake = Parameter:sub(1,sSub);
-			Parameter = Parameter:sub(sSub+2);
-		end;
+		snowflake,Parameter = parseMention(Parameter);
 		if Parameter == '' then
 			Parameter = nil;
 		end;

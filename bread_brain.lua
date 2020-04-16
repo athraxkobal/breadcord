@@ -45,21 +45,13 @@ end);
 
 Client:on('messageCreate',function(msgObj)
 	if msgObj.author.id ~= Client.user.id then
-		if msgObj.guild == nil then
-			if msgObj.author.bot then -- this is purely for fun cause im bored lmao
-				print('B_BRAIN | DM BOT '..msgObj.author.name..'#'..msgObj.author.discriminator..': '..msgObj.content);
-				Client.owner:send('BOT '..msgObj.author.name..'#'..msgObj.author.discriminator..': '..msgObj.content);
-			else
-				-- print('B_BRAIN | DM '..msgObj.author.name..'#'..msgObj.author.discriminator..': '..msgObj.content); -- i aint gonna judge you if you gonna use my damn bot's dm as storage for your pron you filthy animal
-				msgObj:reply('What the hell are you doing?');
-			end;
-		end;
-		
 		if msgObj.content:sub(1,#('<@!'..Client.user.id..'>')) == '<@!'..Client.user.id..'>' or msgObj.content:sub(1,#('<@'..Client.user.id..'>')) == '<@'..Client.user.id..'>' then
-			print('got mention');
 			msgObj:reply('<@'..msgObj.author.id..'>, my prefix is `'..Config.Prefix..'` Start getting that bread.');
 		else
-			Commandments.messageCreate(msgObj);
+			local Ask = Commandments.messageCreate(msgObj);
+			if not Ask and msgObj.guild == nil then
+				msgObj:reply('What the hell are you doing?');
+			end;
 		end;
 	end;
 end);

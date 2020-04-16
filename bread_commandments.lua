@@ -68,6 +68,7 @@ function Commandments.messageCreate(msgObj)
 				if Commandment[5]['none'] then
 					print('B_COMMANDMENTS | Commandment '..msgObj.content..' by '..msgObj.author.tag..' is valid, executing');
 					Commandment[3](msgObj,Parameter);
+					return true;
 				else
 					if Commandment[5]['dmonly'] then
 						if msgObj.guild then
@@ -77,12 +78,14 @@ function Commandments.messageCreate(msgObj)
 								if msgObj.author.id == Client.owner.id then
 									Commandment[3](msgObj,Parameter);
 									print('B_COMMANDMENTS | DM Commandment '..msgObj.content..' by bot owner is valid, executing');
+									return true;
 								else
 									msgObj:reply('This command is owner only');
 								end;
 							else
 								Commandment[3](msgObj,Parameter);
 								print('B_COMMANDMENTS | DM Commandment '..msgObj.content..' by '..msgObj.author.tag..' is valid, executing');
+								return true;
 							end;
 						end;
 					elseif Commandment[5]['serveronly'] then
@@ -93,12 +96,14 @@ function Commandments.messageCreate(msgObj)
 								if msgObj.author.id == Client.owner.id then
 									Commandment[3](msgObj,Parameter);
 									print('B_COMMANDMENTS | Commandment '..msgObj.content..' by bot owner is valid, executing');
+									return true;
 								else
 									msgObj:reply('This command is owner only');
 								end;
 							else
 								Commandment[3](msgObj,Parameter);
 								print('B_COMMANDMENTS | Commandment '..msgObj.content..' by '..msgObj.author.tag..' is valid, executing');
+								return true;
 							end;
 						end;
 					else
@@ -106,12 +111,14 @@ function Commandments.messageCreate(msgObj)
 							if msgObj.author.id == Client.owner.id then
 								Commandment[3](msgObj,Parameter);
 								print('B_COMMANDMENTS | Commandment '..msgObj.content..' by bot owner is valid, executing');
+								return true;
 							else
 								msgObj:reply('This command is owner only');
 							end;
 						else
 							Commandment[3](msgObj,Parameter);
 							print('B_COMMANDMENTS | Commandment '..msgObj.content..' by '..msgObj.author.tag..' is valid, executing');
+							return true;
 						end;
 					end;
 				end;
