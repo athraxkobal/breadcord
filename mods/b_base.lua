@@ -1,16 +1,72 @@
 local discordia = require('discordia');
+local thisMod = 'base';
 
 return function(Commandments,Client)
 	--[[TODO
 			Make a help command haha
+				will list modules with no args
+				will be able to list module commands (and maybe an alias if applicable) by using subcommand 'mod_<modName>'
+				will show command info for commands by just typing the command name or any of its aliases 
 	]]--
+	Commandments:addCmd({'help'},'Get help for a command (WIP)',function(msgObj,Parameter) -- make this able to list commands
+		if Parameter == '' then
+			local modNames = {};
+			for i,v in ipairs(Commandments.Modules) do
+				table.insert(modNames,'`'..v..'`');
+			end;
+			table.sort(modNames);
+			modNames = table.concat(modNames,',');
+			msgObj:reply('Current modules: '..modNames);
+		elseif Parameter:sub(1,4) == 'mod_' then
+			--[[ list commands like this, owneronly commands will be skipped
+				*<modName>* module commands:
+				```http
+				cmd: Description | flags
+				cmd2,cmd2alias: Description | flags
+				```
+				EXAMPLE:
+				*base* module commands:
+				```http
+				help: Get help for a command
+				whydoiexist,ponderexistance: Ask why do we live | DM only
+				```
+			]]--
+			msgObj:reply('Unimplemented, sorry');
+		else
+			for i,v in ipairs(Commandments) do
+				for ai,av in ipairs(v[1]) do
+					if Parameter:sub(1,#av):lower() == av then
+						local cmdInfo = {'Command: '..v[1][1],'Module: '..v[4]};
+						if #v[1] > 1 then
+							local aliases = {};
+							for ei,ev in ipairs(v[1]) do
+								if ei > 1 then table.insert(aliases,ev); end;
+							end;
+							table.insert(cmdInfo,'Available aliases: '..table.concat(aliases,', '));
+						end;
+						table.insert(cmdInfo,'Description: '..v[2]);
+						if v[5].dmonly then
+							table.insert(cmdInfo,'This command is DM only');
+						elseif v[5].serveronly then
+							table.insert(cmdInfo,'This command can only be ran in a server');
+						end;
+						if v[5].owneronly then
+							table.insert(cmdInfo,'This command is bot owner only');
+						end;
+						msgObj:reply('```http\n'..table.concat(cmdInfo,'\n')..'\n```');
+						break;
+					end;
+				end;
+			end;
+		end;
+	end,thisMod)
 	Commandments:addCmd({'stop','dip'},'Shuts down the bot',function(msgObj,Parameter)
 		if msgObj.author.id == Client.owner.id then
 			msgObj:reply('Shutting down...'); Client:setGame(nil); Client:setStatus(discordia.enums.status.invisible); Client:stop();
 		else
 			msgObj:reply('YOU CAN\'T KILL ME!');
 		end;
-	end,'base');	
+	end,thisMod);	
 	Commandments:addCmd('setname','Changes the name of the bot',function(msgObj,Parameter)
 		local Success = Client:setUsername(Parameter);
 		if Success then
@@ -19,7 +75,7 @@ return function(Commandments,Client)
 		else
 			msgObj:reply('Failed to change username');
 		end;
-	end,'base','owneronly');
+	end,thisMod,'owneronly');
 	Commandments:addCmd('setgame','Changes the game of the bot',function(msgObj,Parameter)
 		if Parameter == '' then
 			Client:setGame(nil);
@@ -34,7 +90,7 @@ return function(Commandments,Client)
 				msgObj:reply('Set game to '..Parameter);
 			end;
 		end;
-	end,'base','owneronly');
+	end,thisMod,'owneronly');
 	Commandments:addCmd('exec','Run some lua code',function(msgObj,Parameter)
 		local msgChannel = msgObj.channel; -- in case msgObj gets clapped
 		local Environment = setmetatable({
@@ -70,5 +126,6 @@ return function(Commandments,Client)
 				end;
 			end;
 		end;
-	end,'base','owneronly');
+	end,thisMod,'owneronly');
+	return thisMod;
 end;

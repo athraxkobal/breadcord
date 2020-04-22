@@ -1,8 +1,8 @@
 local discordia = require('discordia');
-
+local thisMod = 'mod';
 -- "parse"Mention
 local function parseMention(Parameter)
-	if Parameter:sub(1,2) == '<@' then
+	if Parameter:sub(1,2) == '<@' then -- mobile clients still dont include `!` in mentions (as of 17.1)
 		local fSub,sSub = Parameter:find('%b<>');
 		return Parameter:sub(3,sSub-1),Parameter:sub(sSub+2);
 	elseif Parameter:sub(1,3) == '<@!' then
@@ -59,7 +59,7 @@ return function(Commandments,Client)
 			msgObj:reply('Ban failed');
 			print('B_MOD | ban fail, reason: '..errMsg);
 		end;
-	end,'mod','serveronly');
+	end,thisMod,'serveronly');
 	Commandments:addCmd('unban','Unban a user',function(msgObj,Parameter)	
 		local snowflake = '';
 		if Parameter == '' then
@@ -84,7 +84,7 @@ return function(Commandments,Client)
 			msgObj:reply('Unban failed');
 			print('B_MOD | unban fail, reason: '..errMsg);
 		end;
-	end,'mod','serveronly');
+	end,thisMod,'serveronly');
 	Commandments:addCmd('kick','Kick a user',function(msgObj,Parameter)
 		local snowflake = '';
 		if Parameter == '' then
@@ -109,5 +109,6 @@ return function(Commandments,Client)
 			msgObj:reply(':Kick failed');
 			print('B_MOD | Kick fail, reason: '..errMsg);
 		end;
-	end,'mod','serveronly');
+	end,thisMod,'serveronly');
+	return thisMod;
 end;

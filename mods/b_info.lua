@@ -1,8 +1,8 @@
 local discordia = require('discordia'); 
-
+local thisMod = 'info';
 -- Only accepts objects, also accepts members
 -- Expects the user object to be non-nil
-function getUserInfo(Client,user,guild)
+local function getUserInfo(Client,user,guild)
 	local userInfo = {};
 	if type(user) == 'string' then
 		print('B_INFO | Getting user info for '..user);
@@ -94,7 +94,7 @@ function getUserInfo(Client,user,guild)
 	return userInfo;
 end;
 
-function getGuildInfo(Client,guild)
+local function getGuildInfo(Client,guild)
 	if type(guild) == 'string' then
 		print('B_INFO | Getting guild info for '..guild);
 		guild = Client:getGuild(guild);
@@ -183,7 +183,7 @@ end;
 return function(Commandments,Client)
 	Commandments:addCmd('snowflakedate','Calculate date from a snowflake',function(msgObj,Parameter)
 		msgObj:reply(discordia.Date.fromSnowflake(Parameter):toString()..', jackass');
-	end,'info','owneronly');
+	end,thisMod,'owneronly');
 	Commandments:addCmd('guildinfo','Get info of this guild',function(msgObj,Parameter)
 		if msgObj.author.id ~= Client.owner.id then
 			if msgObj.guild ~= nil then
@@ -209,7 +209,7 @@ return function(Commandments,Client)
 				end;
 			end;
 		end;
-	end,'info');
+	end,thisMod);
 	Commandments:addCmd('userinfo','Get info of yourself or another user',function(msgObj,Parameter)
 		if Parameter == '' then
 			if msgObj.guild == nil then
@@ -242,5 +242,6 @@ return function(Commandments,Client)
 				end;
 			end;
 		end;
-	end,'info');
+	end,thisMod);
+	return thisMod;
 end;
