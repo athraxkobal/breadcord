@@ -1,114 +1,130 @@
-local discordia = require('discordia');
-local thisMod = 'mod';
--- "parse"Mention
-local function parseMention(Parameter)
-	if Parameter:sub(1,2) == '<@' then -- mobile clients still dont include `!` in mentions (as of 17.1)
-		local fSub,sSub = Parameter:find('%b<>');
-		return Parameter:sub(3,sSub-1),Parameter:sub(sSub+2);
-	elseif Parameter:sub(1,3) == '<@!' then
-		local fSub,sSub = Parameter:find('%b<>');
-		return Parameter:sub(4,sSub-1),Parameter:sub(sSub+2);
-	else
-		local fSub,sSub = Parameter:find('%d+');
-		return Parameter:sub(1,sSub),Parameter:sub(sSub+2);
-	end;
-end;
+local mod = {};
+mod.Info = {
+	Name = 'Moderation Commands', shortName = 'jannymod',
+	Description = 'Too lazy to click the damn buttons?',
+	Author = 'athraxkobal',Url = 'https://github.com/athraxkobal/breadcord',
+	Version = 'Tied with Breadcord',
+};
 
-return function(Commandments,Client)
-	--[[TODO
-			Add or create a real parser
-	]]--
-	Commandments:addCmd('ban','Ban a user',function(msgObj,Parameter)
-		local msgPurgeDays;
-		local snowflake;
-		if Parameter == '' then
-			msgObj:reply('Usage: '..Commandments.Prefix..'ban <optional days> <snowflake or mention> <optional reason>');
-			return nil;
-		end;
-		print('B_MOD | ban parameters: '..Parameter);
-		if type(tonumber(Parameter:sub(1,1))) == 'number' then
-			if Parameter:sub(2,2) == ' ' then
-				msgPurgeDays = tonumber(Parameter:sub(1,1));
-				Parameter = Parameter:sub(3); -- Cut the day arg
-			elseif Parameter:sub(2,2) == '' then
-				msgObj:reply('Usage: '..Commandments.Prefix..'ban <optional days> <snowflake or mention> <optional reason>');
-				return nil;
-			end;
-		end;
-		snowflake,Parameter = parseMention(Parameter);
-		if Parameter == '' then
-			Parameter = nil;
-		end;
-		local duelPurpose = msgObj.guild:getBan(snowflake);
-		if duelPurpose ~= nil then
-			msgObj:reply('The user specified '..duelPurpose.user.tag..' is already banned');
-			return nil;
-		else
-			duelPurpose = msgObj.guild:getMember(snowflake);
-		end;
-		local succState,errMsg = msgObj.guild:banUser(snowflake,Parameter,msgPurgeDays);
-		if succState then
-			if duelPurpose == nil then
-				msgObj:reply('Successfully banned user `'..snowflake..'`');
-				print('B_MOD | ban success on id '..snowflake);
+mod.Commands = {
+	{
+		Name = 'ban', Description = 'Ban a user, late or not',
+		Usage = '%s <mention> <?msg purge days> <?reason, rest of line>',
+		Flags = {'banmembers','inguild'},
+		Function = function(msgObj,Parameter,splitParam)
+			local msgPurgeDays,snowflake,reason;
+			local id,type = Commandments:getMentionId(splitParam[1]);
+			if Parameter == '' then return false; end;
+			if id then
+				if type == 'user' then
+					snowflake = id;
+				else
+					msgObj:reply'A ***user*** mention, boss';
+					return;
+				end;
 			else
-				msgObj:reply('Successfully banned user '..duelPurpose.user.tag..' `'..snowflake..'`');
-				print('B_MOD | ban success on '..duelPurpose.user.tag..' with id '..snowflake);
+				snowflake = splitParam[1]:match'%d+';
 			end;
-		else
-			msgObj:reply('Ban failed');
-			print('B_MOD | ban fail, reason: '..errMsg);
+			if not snowflake then return false; end;
+			
+			local WhatAStory = msgObj.guild:getBan(snowflake);
+			if WhatAStory then
+				msgObj:reply('The user '..WhatAStory.user.tag..' is already banned');
+				return;
+			else
+				WhatAStory = msgObj.guild:getMember(snowflake);
+			end;
+			if splitParam[2] then
+				msgPurgeDays = tonumber(splitParam[2]);
+				if not msgPurgeDays then msgPurgeDays = 0; end;
+				if msgPurgeDays > 7 then msgPurgeDays = 7; end;
+				reason = table.concat(splitParam,' ',3);
+				if not splitParam[3] then reason = 'No reason given'; end;
+				reason = 'Actor '..msgObj.author.tag..' ('..msgObj.author.id..'):'..reason; -- rest of the string
+			end;
+			local bannedTag;
+			if WhatAStory then bannedTag = WhatAStory.user.tag; end;
+			local s = msgObj.guild:banUser(snowflake,reason);
+			if s then
+				if WhatAStory then
+					msgObj:reply('Successfully banned user '..bannedTag..' (`'..snowflake..'`)');
+				else
+					msgObj:reply('Successfully banned user `'..snowflake..'`');
+				end;
+			else
+				msgObj:reply'Ban failed and I have no idea why :sunglasses:';
+			end;
 		end;
-	end,thisMod,'serveronly');
-	Commandments:addCmd('unban','Unban a user',function(msgObj,Parameter)	
-		local snowflake = '';
-		if Parameter == '' then
-			msgObj:reply('Usage: '..Commandments.Prefix..'unban <snowflake or mention> <optional reason>');
-			return nil;
+	},
+	{
+		Name = 'unban', Description = 'Unban a user',
+		Usage = '% s <snowflake id> <?reason, rest of line>',
+		Flags = {'banmembers','inguild'},
+		Function = function(msgObj,Parameter,splitParam)
+			local snowflake,reason;
+			if Parameter == '' then return false; end;
+			local id,type = Commandments:getMentionId(splitParam[1]);
+			if Parameter == '' then return false; end;
+			if id then
+				if type == 'user' then
+					snowflake = id;
+				else
+					msgObj:reply'A ***user*** mention, boss';
+					return;
+				end;
+			else
+				snowflake = splitParam[1]:match'%d+';
+			end;
+			if not snowflake then return false; end;
+			local banObj = msgObj.guild:getBan(snowflake);
+			if not banObj then
+				msgObj:reply('The user specified `'..snowflake..'` is not banned'); return;
+			end;
+			reason = table.concat(splitParam,' ',2);
+			if not splitParam[2] then reason = 'No reason given'; end;
+			reason = 'Actor '..msgObj.author.tag..' ('..msgObj.author.id..'):'..reason; -- rest of the string
+			local bannedTag = banObj.user.tag;
+			local s = msgObj.guild:unbanUser(snowflake,reason);
+			if s then
+				msgObj:reply('Successfully unbanned user '..banObj.user.tag..' (`'..snowflake..'`)');
+			else
+				msgObj:reply'Unban failed and I have no idea why :sunglasses:';
+			end;
 		end;
-		print('B_MOD | unban parameters: '..Parameter);
-		snowflake,Parameter = parseMention(Parameter);
-		if Parameter == '' then
-			Parameter = nil;
+	},
+	{
+		Name = 'kick', Description = 'Kick a user',
+		Usage = '%s <mention/id> <?reason, rest of line>',
+		Flags = {'kickmembers','inguild'},
+		Function = function(msgObj,Parameter,splitParam)
+			local snowflake,reason;
+			local obj,type = Commandments:getMentionObj(splitParam[1],msgObj.guild);
+			if obj then
+				if type ~= 'member' then
+					msgObj:reply('A user mention ***from this guild***, boss');
+				else
+					snowflake = obj.id;
+				end;
+			else
+				snowflake = splitParam[1]:match'%d+';
+				obj = msgObj.guild:getMember(snowflake);
+			end;
+			if not obj then
+				msgObj:reply('The user specified `'..snowflake..'` is not a member of this guild'); return;
+			end;
+			reason = table.concat(splitParam,' ',2);
+			if not splitParam[2] then reason = 'No reason given'; end;
+			reason = 'Actor '..msgObj.author.tag..' ('..msgObj.author.id..'):'..reason; -- rest of the string
+
+			local s = msgObj.guild:kickUser(snowflake,Parameter);
+			local kickedTag = obj.tag;
+			if s then
+				msgObj:reply('Sucessfully kicked user '..kickedTag..' (`'..snowflake..'`)');
+			else
+				msgObj:reply'Kick failed and I have no idea why :sunglasses:';
+			end;
 		end;
-		local banObj = msgObj.guild:getBan(snowflake);
-		if banObj == nil then
-			msgObj:reply('The user specified `'..snowflake..'` is not banned');
-			return nil;
-		end;
-		local succState,errMsg = msgObj.guild:unbanUser(snowflake,Parameter);
-		if succState then
-			msgObj:reply('Successfully unbanned user '..banObj.user.tag..' `'..snowflake..'`');
-			print('B_MOD | unban success on '..banObj.user.tag..' with id '..snowflake);
-		else
-			msgObj:reply('Unban failed');
-			print('B_MOD | unban fail, reason: '..errMsg);
-		end;
-	end,thisMod,'serveronly');
-	Commandments:addCmd('kick','Kick a user',function(msgObj,Parameter)
-		local snowflake = '';
-		if Parameter == '' then
-			msgObj:reply('Usage: '..Commandments.Prefix..'kick <snowflake or mention> <optional reason>');
-			return nil;
-		end;
-		print('B_MOD | kick parameters: '..Parameter);
-		snowflake,Parameter = parseMention(Parameter);
-		if Parameter == '' then
-			Parameter = nil;
-		end;
-		local memberObj = msgObj.guild:getMember(snowflake);
-		if memberObj == nil then
-			msgObj:reply('The user specified `'..snowflake..'` is not a member of this guild');
-			return nil;
-		end;
-		local succState,errMsg = msgObj.guild:kickUser(snowflake,Parameter);
-		if succState then
-			msgObj:reply('Successfully kicked user '..memberObj.user.tag..' `'..snowflake..'`');
-			print('B_MOD | Kick success on '..memberObj.user.tag..' with id '..snowflake);
-		else
-			msgObj:reply(':Kick failed');
-			print('B_MOD | Kick fail, reason: '..errMsg);
-		end;
-	end,thisMod,'serveronly');
-	return thisMod;
-end;
+	},
+};
+
+return mod;

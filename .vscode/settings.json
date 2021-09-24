@@ -1,0 +1,10 @@
+{
+	"Lua.diagnostics.globals": [
+		"Config",
+		"discordia",
+		"Client",
+		"Commandments",
+		"fs",
+		"json"
+	]
+}
